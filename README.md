@@ -11,7 +11,7 @@ A standalone Android smartphone app designed to manage Wear OS watch apps distri
 ## ⌚ Compatibility
 
 ### Tested & Verified:
-- ✅ **Samsung Galaxy Watch 8** (Wear OS 5 / One UI Watch 6)
+- ✅ **Samsung Galaxy Watch 8** (Wear OS 6.0 / One UI 8.0 Watch / Android 16)
 
 ### Supported Smartwatches:
 The app works with **any smartwatch running Google Wear OS (Android)** that supports **Wireless Debugging (Wireless ADB)** in Developer Options:
