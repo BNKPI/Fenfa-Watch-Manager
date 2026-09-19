@@ -1,0 +1,21 @@
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '1.0'
+CurrentVersionCode: 8
+
+Categories:
+  - System
+  - Connectivity
+License: GPL-3.0-or-later
+AuthorName: BNKPI
+AuthorEmail: 115729091+BNKPI@users.noreply.github.com
+SourceCode: https://github.com/BNKPI/Fenfa-Watch-Manager
+IssueTracker: https://github.com/BNKPI/Fenfa-Watch-Manager/issues
+
+Builds:
+  - versionName: '1.0'
+    versionCode: 8
+    commit: v1.0
+    subdir: app
+    gradle:
+      - assembleFdroidRelease

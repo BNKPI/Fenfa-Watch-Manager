@@ -105,14 +105,19 @@ fenfa.productSlug=watchmanager
 ```
 
 ### Building
+
+The project offers two distribution flavors:
+- **`standalone`**: Includes direct in-app self-updating capabilities from your Fenfa server (`REQUEST_INSTALL_PACKAGES` enabled).
+- **`fdroid`**: Stripped of self-updating code and installer permissions, fully conforming to F-Droid Inclusion Policies.
+
 ```bash
-# Build Debug APK
-./gradlew assembleDebug
+# Build Standalone Release APK (with Fenfa self-updater)
+./gradlew assembleStandaloneRelease
 
-# Build Release APK
-./gradlew assembleRelease
+# Build F-Droid Release APK (F-Droid compliant, no self-updater)
+./gradlew assembleFdroidRelease
 
-# Upload Release to Fenfa
+# Upload Standalone Release to Fenfa
 ./gradlew fenfaUploadRelease -Pchangelog="Release notes..."
 ```
 

@@ -99,6 +99,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun checkSelfUpdate() {
+        if (!BuildConfig.ENABLE_SELF_UPDATE) return
         viewModelScope.launch {
             val urls = listOf(_fenfaUrls.value.first, _fenfaUrls.value.second).filter { it.isNotBlank() }
             val release = fenfaClient.fetchLatestRelease(BuildConfig.FENFA_PRODUCT_SLUG, urls).getOrNull()

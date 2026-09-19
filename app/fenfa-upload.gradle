@@ -21,12 +21,12 @@ def fenfaChangelog = (findProperty("fenfa.changelog")
 
 // Capture plain File/DirectoryProperty at configuration time (CC-safe).
 def versionPropsFile = rootProject.file("version.properties")
-def apkReleaseDir = layout.buildDirectory.dir("outputs/apk/release")
+def apkReleaseDir = layout.buildDirectory.dir("outputs/apk")
 
 tasks.register("fenfaUploadRelease") {
     group = "distribution"
     description = "Build release APK and upload to Fenfa"
-    dependsOn("assembleRelease")
+    dependsOn("assembleStandaloneRelease")
 
     def uploadUrlBase = fenfaUrl
     def token = fenfaUploadToken
@@ -57,14 +57,21 @@ tasks.register("fenfaUploadRelease") {
         def versionCode = versionProps.getProperty("versionCode", "1")
         def versionName = versionProps.getProperty("versionName", "1.0")
 
-        def apkDir = apkDirProvider.get().asFile
-        def apkCandidates = apkDir.listFiles()?.findAll { it.isFile() && it.name.endsWith(".apk") } ?: []
-        def apkFile = apkCandidates.find { !it.name.contains("unsigned") }
-            ?: apkCandidates.max { a, b -> a.lastModified() <=> b.lastModified() }
+        def baseApkDir = apkDirProvider.get().asFile
+        def allApks = []
+        baseApkDir.eachFileRecurse { f ->
+            if (f.isFile() && f.name.endsWith(".apk") && !f.name.contains("androidTest")) {
+                allApks.add(f)
+            }
+        }
+        def apkFile = allApks.find { it.name.contains("standalone") && it.name.contains("release") && !it.name.contains("unsigned") }
+            ?: allApks.find { it.name.contains("release") && !it.name.contains("unsigned") }
+            ?: allApks.find { !it.name.contains("unsigned") }
+            ?: allApks.max { a, b -> a.lastModified() <=> b.lastModified() }
         if (apkFile == null || !apkFile.exists()) {
             throw new GradleException(
-                "Release APK not found in ${apkDir}. " +
-                "Run ./gradlew assembleRelease first — expected app-release.apk or app-release-unsigned.apk"
+                "Release APK not found in ${baseApkDir}. " +
+                "Run ./gradlew assembleStandaloneRelease first"
             )
         }
 

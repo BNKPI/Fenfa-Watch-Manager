@@ -1,0 +1,12 @@
+Fenfa Watch Manager is a standalone Android companion app that connects directly to your Wear OS smartwatch via Wireless ADB.
+
+It enables you to manage, install, and update Wear OS applications hosted on your self-hosted Fenfa server — completely without a computer, cables, or third-party ADB tools.
+
+Features:
+• Direct Wireless ADB connection to Wear OS watches (tested on Galaxy Watch 8 with Wear OS 6 / One UI 8 Watch).
+• Automatic mDNS discovery of watches with active wireless debugging on your local Wi-Fi.
+• Multi-app management with live version comparison against your Fenfa instance.
+• Dual-host connectivity (LAN Wi-Fi and Remote VPN / Tailscale).
+• 1-click silent APK installation and updates directly onto your watch via ADB shell.
+• Persistent RSA keypair stored securely in internal app storage.
+• 100% Free and Open Source (GPLv3), with no telemetry, tracking, or ads.

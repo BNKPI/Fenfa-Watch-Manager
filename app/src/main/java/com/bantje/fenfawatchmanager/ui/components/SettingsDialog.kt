@@ -105,13 +105,15 @@ fun SettingsDialog(
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
-                            text = "Slug: ${BuildConfig.FENFA_PRODUCT_SLUG}",
+                            text = if (BuildConfig.ENABLE_SELF_UPDATE) "Slug: ${BuildConfig.FENFA_PRODUCT_SLUG}" else "Distribution: F-Droid",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    FilledTonalButton(onClick = onCheckSelfUpdate) {
-                        Text("Check")
+                    if (BuildConfig.ENABLE_SELF_UPDATE) {
+                        FilledTonalButton(onClick = onCheckSelfUpdate) {
+                            Text("Check")
+                        }
                     }
                 }
             }

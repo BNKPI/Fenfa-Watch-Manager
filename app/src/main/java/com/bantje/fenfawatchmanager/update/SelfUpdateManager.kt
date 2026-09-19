@@ -29,6 +29,7 @@ class SelfUpdateManager(
     private var pendingInstallFile: File? = null
 
     suspend fun checkForSelfUpdate(baseUrls: List<String>): FenfaRelease? = withContext(Dispatchers.IO) {
+        if (!BuildConfig.ENABLE_SELF_UPDATE) return@withContext null
         try {
             val result = fenfaClient.fetchLatestRelease(BuildConfig.FENFA_PRODUCT_SLUG, baseUrls)
             val release = result.getOrNull() ?: return@withContext null
@@ -69,6 +70,7 @@ class SelfUpdateManager(
     }
 
     fun resumePendingWork() {
+        if (!BuildConfig.ENABLE_SELF_UPDATE) return
         pendingInstallFile?.let { file ->
             if (file.exists()) {
                 installApk(file)

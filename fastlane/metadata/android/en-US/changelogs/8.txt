@@ -1,0 +1,4 @@
+- Initial release of Fenfa Watch Manager
+- Manage and update Wear OS smartwatch apps via Wireless ADB and Fenfa
+- Automatic mDNS discovery of watches
+- Dedicated F-Droid and standalone build variants

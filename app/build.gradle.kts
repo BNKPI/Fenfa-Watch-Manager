@@ -43,6 +43,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("standalone") {
+            dimension = "distribution"
+            buildConfigField("Boolean", "ENABLE_SELF_UPDATE", "true")
+        }
+        create("fdroid") {
+            dimension = "distribution"
+            buildConfigField("Boolean", "ENABLE_SELF_UPDATE", "false")
+        }
+    }
+
     signingConfigs {
         if (keystorePropsFile.exists()) {
             create("release") {
