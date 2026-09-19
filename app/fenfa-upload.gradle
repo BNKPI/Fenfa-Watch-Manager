@@ -1,0 +1,126 @@
+// Fenfa release upload — configure fenfa.properties in the project root (see fenfa.properties.example).
+// Configuration-cache safe: no Project/Gradle model access inside doLast.
+
+def fenfaPropsFile = rootProject.file("fenfa.properties")
+if (fenfaPropsFile.exists()) {
+    def fenfaProps = new Properties()
+    fenfaPropsFile.withInputStream { fenfaProps.load(it) }
+    fenfaProps.each { key, value ->
+        if (!project.hasProperty(key.toString())) {
+            project.ext.set(key.toString(), value.toString())
+        }
+    }
+}
+
+def fenfaUrl = (findProperty("fenfa.url") ?: "").toString()
+def fenfaUploadToken = (findProperty("fenfa.uploadToken") ?: "").toString()
+def fenfaVariantId = (findProperty("fenfa.variantId") ?: "").toString()
+def fenfaChangelog = (findProperty("fenfa.changelog")
+    ?: findProperty("changelog")
+    ?: "Release build").toString()
+
+// Capture plain File/DirectoryProperty at configuration time (CC-safe).
+def versionPropsFile = rootProject.file("version.properties")
+def apkReleaseDir = layout.buildDirectory.dir("outputs/apk/release")
+
+tasks.register("fenfaUploadRelease") {
+    group = "distribution"
+    description = "Build release APK and upload to Fenfa"
+    dependsOn("assembleRelease")
+
+    def uploadUrlBase = fenfaUrl
+    def token = fenfaUploadToken
+    def variantId = fenfaVariantId
+    def changelog = fenfaChangelog
+    def versionFile = versionPropsFile
+    def apkDirProvider = apkReleaseDir
+
+    inputs.file(versionFile).optional()
+    inputs.dir(apkDirProvider).withPropertyName("apkReleaseDir").optional()
+
+    doLast {
+        if (uploadUrlBase.isBlank()) {
+            throw new GradleException("fenfa.url is not set — copy fenfa.properties.example to fenfa.properties")
+        }
+        if (token.isBlank()) {
+            throw new GradleException("fenfa.uploadToken is not set")
+        }
+        if (variantId.isBlank()) {
+            throw new GradleException("fenfa.variantId is not set")
+        }
+
+        if (!versionFile.exists()) {
+            throw new GradleException("version.properties not found in project root")
+        }
+        def versionProps = new Properties()
+        versionFile.withInputStream { versionProps.load(it) }
+        def versionCode = versionProps.getProperty("versionCode", "1")
+        def versionName = versionProps.getProperty("versionName", "1.0")
+
+        def apkDir = apkDirProvider.get().asFile
+        def apkCandidates = apkDir.listFiles()?.findAll { it.isFile() && it.name.endsWith(".apk") } ?: []
+        def apkFile = apkCandidates.find { !it.name.contains("unsigned") }
+            ?: apkCandidates.max { a, b -> a.lastModified() <=> b.lastModified() }
+        if (apkFile == null || !apkFile.exists()) {
+            throw new GradleException(
+                "Release APK not found in ${apkDir}. " +
+                "Run ./gradlew assembleRelease first — expected app-release.apk or app-release-unsigned.apk"
+            )
+        }
+
+        println "Uploading ${apkFile.name} (v${versionName}, build ${versionCode}) to Fenfa..."
+
+        def boundary = "----FenfaUpload${System.currentTimeMillis()}"
+        def uploadUrl = "${uploadUrlBase.replaceAll(/\/$/, "")}/upload"
+        def connection = new URL(uploadUrl).openConnection()
+        connection.setDoOutput(true)
+        connection.setRequestProperty("X-Auth-Token", token)
+        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=${boundary}")
+
+        def lineEnd = "\r\n"
+        def output = connection.getOutputStream()
+        def writer = new OutputStreamWriter(output, "UTF-8")
+
+        writer.write("--${boundary}${lineEnd}")
+        writer.write("Content-Disposition: form-data; name=\"variant_id\"${lineEnd}${lineEnd}")
+        writer.write("${variantId}${lineEnd}")
+
+        writer.write("--${boundary}${lineEnd}")
+        writer.write("Content-Disposition: form-data; name=\"version\"${lineEnd}${lineEnd}")
+        writer.write("${versionName}${lineEnd}")
+
+        writer.write("--${boundary}${lineEnd}")
+        writer.write("Content-Disposition: form-data; name=\"build\"${lineEnd}${lineEnd}")
+        writer.write("${versionCode}${lineEnd}")
+
+        writer.write("--${boundary}${lineEnd}")
+        writer.write("Content-Disposition: form-data; name=\"changelog\"${lineEnd}${lineEnd}")
+        writer.write("${changelog}${lineEnd}")
+
+        writer.write("--${boundary}${lineEnd}")
+        writer.write("Content-Disposition: form-data; name=\"app_file\"; filename=\"${apkFile.name}\"${lineEnd}")
+        writer.write("Content-Type: application/vnd.android.package-archive${lineEnd}${lineEnd}")
+        writer.flush()
+        apkFile.withInputStream { input ->
+            output.write(input.bytes)
+        }
+        output.write(lineEnd.getBytes("UTF-8"))
+
+        writer.write("--${boundary}--${lineEnd}")
+        writer.flush()
+        writer.close()
+
+        def responseCode = connection.getResponseCode()
+        def responseStream = responseCode >= 400 ? connection.getErrorStream() : connection.getInputStream()
+        def responseBody = responseStream?.getText("UTF-8") ?: ""
+        if (responseCode !in 200..299) {
+            throw new GradleException("Fenfa upload failed (${responseCode}): ${responseBody}")
+        }
+        println "Upload successful: ${responseBody}"
+
+        def nextCode = (versionCode as int) + 1
+        versionProps.setProperty("versionCode", nextCode.toString())
+        versionFile.withOutputStream { versionProps.store(it, "Auto-incremented after Fenfa upload") }
+        println "version.properties: versionCode -> ${nextCode}"
+    }
+}

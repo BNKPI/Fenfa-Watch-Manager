@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Fenfa Watch Manager</string>
+
+    <string name="update_available_title">Update verfügbar</string>
+    <string name="update_available_body">Version %1$s ist verfügbar.</string>
+    <string name="update_now">Jetzt aktualisieren</string>
+    <string name="update_later">Später</string>
+    <string name="update_download_started">Download gestartet…</string>
+    <string name="update_download_failed">Download fehlgeschlagen</string>
+    <string name="update_install_failed">Installation fehlgeschlagen</string>
+    <string name="update_install_success">Update installiert</string>
+</resources>

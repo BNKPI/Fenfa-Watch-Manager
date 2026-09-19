@@ -1,0 +1,9 @@
+# Fenfa Configuration Example
+# Copy this file to fenfa.properties and fill in your values.
+# Do NOT commit fenfa.properties to version control.
+
+fenfa.localUrl=http://192.168.1.100:8100
+fenfa.url=https://fenfa.example.com
+fenfa.uploadToken=YOUR_UPLOAD_TOKEN
+fenfa.variantId=var_YOUR_VARIANT_ID
+fenfa.productSlug=watchmanager
