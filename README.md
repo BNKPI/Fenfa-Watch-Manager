@@ -93,4 +93,5 @@ fenfa.productSlug=watchmanager
 
 ## 📄 Lizenz
 
-Dieses Projekt steht unter der [MIT-Lizenz](LICENSE).
+Dieses Projekt steht unter der [GNU General Public License v3.0 (GPLv3)](LICENSE).
+
