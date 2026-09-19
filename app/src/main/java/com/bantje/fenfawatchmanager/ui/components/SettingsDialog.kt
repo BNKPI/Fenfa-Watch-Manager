@@ -76,6 +76,7 @@ fun SettingsDialog(
                     value = localUrl,
                     onValueChange = { localUrl = it },
                     label = { Text("LAN URL (Home Wi-Fi)") },
+                    placeholder = { Text("e.g. http://192.168.1.100:8100") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -86,6 +87,7 @@ fun SettingsDialog(
                     value = remoteUrl,
                     onValueChange = { remoteUrl = it },
                     label = { Text("Remote URL (Tailscale / Internet)") },
+                    placeholder = { Text("e.g. https://fenfa.example.com") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )

@@ -77,8 +77,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         viewModelScope.launch {
+            var isInitialLoad = true
             repository.managedAppsFlow.collect { list ->
                 _apps.value = list
+                if (isInitialLoad && list.isNotEmpty()) {
+                    isInitialLoad = false
+                    for (app in list) {
+                        checkAppInternal(app)
+                    }
+                }
             }
         }
     }

@@ -41,7 +41,7 @@ The app works with **any smartwatch running Google Wear OS (Android)** that supp
 - **Embedded Wireless ADB Client**: Direct connection to your smartwatch via the native Kotlin ADB library [`Kadb`](https://github.com/flyfishxu/Kadb) (no computer or external tools required).
 - **Automatic mDNS Discovery**: Automatically scans your local Wi-Fi for watches with active wireless debugging (`_adb-tls-connect._tcp`) and extracts their dynamic connection port.
 - **Persistent ADB Keypair**: Securely persists generated RSA keys (`kadb_key.pem`) in internal app storage so pairing authorization remains valid across app reboots and updates.
-- **Multi-App Management**: Manage multiple Wear OS applications in one dashboard (default: *OpenGym Wear*).
+- **Multi-App Management**: Manage any number of Wear OS applications in one unified dashboard.
 - **Version Comparison**: Inspects installed `versionCode` via ADB shell and compares it live against the newest release on your Fenfa server.
 - **1-Click Installation**: Downloads APKs in the background and initiates `pm install` on the watch with live progress indicators.
 - **Self-Update**: The manager checks for new versions of itself on Fenfa and enables seamless in-app self-updates via the Android `PackageInstaller`.

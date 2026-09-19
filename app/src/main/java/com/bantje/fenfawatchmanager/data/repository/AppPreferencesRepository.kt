@@ -45,12 +45,12 @@ class AppPreferencesRepository(private val context: Context) {
     val managedAppsFlow: Flow<List<ManagedApp>> = context.dataStore.data.map { prefs ->
         val json = prefs[Keys.MANAGED_APPS_JSON]
         if (json.isNullOrBlank()) {
-            defaultApps()
+            emptyList()
         } else {
             try {
                 deserializeApps(json)
             } catch (_: Exception) {
-                defaultApps()
+                emptyList()
             }
         }
     }
@@ -76,17 +76,7 @@ class AppPreferencesRepository(private val context: Context) {
         }
     }
 
-    private fun defaultApps(): List<ManagedApp> {
-        return listOf(
-            ManagedApp(
-                id = "opengymwear",
-                name = "OpenGym Wear",
-                slug = "opengymwear",
-                packageName = "com.example.opengymwear",
-                autoUpdate = true
-            )
-        )
-    }
+    private fun defaultApps(): List<ManagedApp> = emptyList()
 
     private fun serializeApps(apps: List<ManagedApp>): String {
         val array = JSONArray()
@@ -99,6 +89,11 @@ class AppPreferencesRepository(private val context: Context) {
                 put("autoUpdate", app.autoUpdate)
                 put("installedVersionName", app.installedVersionName ?: "")
                 put("installedVersionCode", app.installedVersionCode ?: -1)
+                put("latestVersionName", app.latestVersionName ?: "")
+                put("latestVersionCode", app.latestVersionCode ?: -1)
+                put("latestReleaseId", app.latestReleaseId ?: "")
+                put("downloadBaseUrl", app.downloadBaseUrl ?: "")
+                put("changelog", app.changelog ?: "")
             }
             array.put(obj)
         }
@@ -109,17 +104,34 @@ class AppPreferencesRepository(private val context: Context) {
         val list = mutableListOf<ManagedApp>()
         val array = JSONArray(json)
         for (i in 0 until array.length()) {
-            val obj = array.getJSONObject(i)
-            val vCode = obj.optInt("installedVersionCode", -1)
+            val obj = array.optJSONObject(i) ?: continue
+            val slug = obj.optString("slug").takeIf { it.isNotBlank() } ?: continue
+            val packageName = obj.optString("packageName").takeIf { it.isNotBlank() } ?: continue
+            val name = obj.optString("name").takeIf { it.isNotBlank() } ?: slug
+            val id = obj.optString("id").takeIf { it.isNotBlank() } ?: slug
+            val autoUpdate = obj.optBoolean("autoUpdate", true)
+            val installedVName = obj.optString("installedVersionName").takeIf { it.isNotBlank() }
+            val installedVCode = obj.optInt("installedVersionCode", -1).takeIf { it >= 0 }
+            val latestVName = obj.optString("latestVersionName").takeIf { it.isNotBlank() }
+            val latestVCode = obj.optInt("latestVersionCode", -1).takeIf { it >= 0 }
+            val latestReleaseId = obj.optString("latestReleaseId").takeIf { it.isNotBlank() }
+            val downloadBaseUrl = obj.optString("downloadBaseUrl").takeIf { it.isNotBlank() }
+            val changelog = obj.optString("changelog").takeIf { it.isNotBlank() }
+
             list.add(
                 ManagedApp(
-                    id = obj.getString("id"),
-                    name = obj.getString("name"),
-                    slug = obj.getString("slug"),
-                    packageName = obj.getString("packageName"),
-                    autoUpdate = obj.optBoolean("autoUpdate", true),
-                    installedVersionName = obj.optString("installedVersionName").takeIf { it.isNotBlank() },
-                    installedVersionCode = if (vCode >= 0) vCode else null
+                    id = id,
+                    name = name,
+                    slug = slug,
+                    packageName = packageName,
+                    autoUpdate = autoUpdate,
+                    installedVersionName = installedVName,
+                    installedVersionCode = installedVCode,
+                    latestVersionName = latestVName,
+                    latestVersionCode = latestVCode,
+                    latestReleaseId = latestReleaseId,
+                    downloadBaseUrl = downloadBaseUrl,
+                    changelog = changelog
                 )
             )
         }

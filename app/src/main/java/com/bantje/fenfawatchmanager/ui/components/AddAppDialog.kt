@@ -34,7 +34,7 @@ fun AddAppDialog(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("App Name") },
-                    placeholder = { Text("e.g. OpenGym Wear") },
+                    placeholder = { Text("e.g. My Watch App") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -45,7 +45,7 @@ fun AddAppDialog(
                     value = slug,
                     onValueChange = { slug = it },
                     label = { Text("Fenfa Product Slug") },
-                    placeholder = { Text("e.g. opengymwear") },
+                    placeholder = { Text("e.g. my-watch-app") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -56,7 +56,7 @@ fun AddAppDialog(
                     value = packageName,
                     onValueChange = { packageName = it },
                     label = { Text("Watch Package Name") },
-                    placeholder = { Text("e.g. com.example.opengymwear") },
+                    placeholder = { Text("e.g. com.example.mywatchapp") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )

@@ -19,14 +19,9 @@ if (keystorePropsFile.exists()) {
     keystoreProps.load(keystorePropsFile.inputStream())
 }
 
-val fenfaPropsFile = rootProject.file("fenfa.properties")
-val fenfaProps = Properties()
-if (fenfaPropsFile.exists()) {
-    fenfaProps.load(fenfaPropsFile.inputStream())
-}
-val defaultLocalUrl = fenfaProps.getProperty("fenfa.localUrl") ?: "http://192.168.1.100:8100"
-val defaultRemoteUrl = fenfaProps.getProperty("fenfa.url") ?: "https://fenfa.example.com"
-val defaultProductSlug = fenfaProps.getProperty("fenfa.productSlug") ?: "watchmanager"
+val defaultLocalUrl = ""
+val defaultRemoteUrl = ""
+val defaultProductSlug = "watchmanager"
 
 android {
     namespace = "com.bantje.fenfawatchmanager"
