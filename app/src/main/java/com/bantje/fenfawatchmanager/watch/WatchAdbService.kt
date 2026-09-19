@@ -51,7 +51,7 @@ class WatchAdbService(private val context: Context? = null) {
             Kadb.create(ip, port).use { kadb ->
                 val model = kadb.shell("getprop ro.product.model").output.trim()
                 val brand = kadb.shell("getprop ro.product.brand").output.trim()
-                val name = if (model.isNotBlank()) "$brand $model".trim() else "Verbunden"
+                val name = if (model.isNotBlank()) "$brand $model".trim() else "Connected"
                 Result.success(name)
             }
         } catch (e: Exception) {
@@ -92,7 +92,7 @@ class WatchAdbService(private val context: Context? = null) {
     suspend fun installApk(ip: String, port: Int, apkFile: File): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             if (!apkFile.exists()) {
-                return@withContext Result.failure(IllegalArgumentException("APK existiert nicht"))
+                return@withContext Result.failure(IllegalArgumentException("APK does not exist"))
             }
             Log.d(TAG, "Installing ${apkFile.name} onto $ip:$port")
             Kadb.create(ip, port).use { kadb ->

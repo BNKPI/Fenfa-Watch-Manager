@@ -66,7 +66,7 @@ class FenfaClient {
                     if (release != null) {
                         return@withContext Result.success(release)
                     } else {
-                        lastError = IllegalStateException("Kein Android-Release in Fenfa gefunden ($baseUrl)")
+                        lastError = IllegalStateException("No Android release found in Fenfa ($baseUrl)")
                     }
                 }
             } catch (e: Exception) {
@@ -75,7 +75,7 @@ class FenfaClient {
             }
         }
 
-        Result.failure(lastError ?: IOException("Fenfa über keine URL erreichbar"))
+        Result.failure(lastError ?: IOException("Fenfa is not reachable via any configured URL"))
     }
 
     suspend fun downloadApk(
@@ -92,9 +92,9 @@ class FenfaClient {
             val request = Request.Builder().url(downloadUrl).get().build()
             downloadClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    return@withContext Result.failure(IOException("Download fehlgeschlagen mit HTTP ${response.code}"))
+                    return@withContext Result.failure(IOException("Download failed with HTTP ${response.code}"))
                 }
-                val body = response.body ?: return@withContext Result.failure(IOException("Leere Server-Antwort"))
+                val body = response.body ?: return@withContext Result.failure(IOException("Empty server response"))
                 val totalLength = body.contentLength()
 
                 body.byteStream().use { input ->
@@ -120,7 +120,7 @@ class FenfaClient {
 
             if (!isValidApk(destFile)) {
                 destFile.delete()
-                return@withContext Result.failure(IOException("Heruntergeladene Datei ist kein gültiges Android APK"))
+                return@withContext Result.failure(IOException("Downloaded file is not a valid Android APK"))
             }
 
             Result.success(destFile)

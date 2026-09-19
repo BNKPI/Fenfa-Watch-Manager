@@ -108,7 +108,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val release = _selfUpdateRelease.value ?: return
         viewModelScope.launch {
             _isSelfUpdating.value = true
-            _statusMessage.value = "Lade Manager-Update v${release.versionName} herunter…"
+            _statusMessage.value = "Downloading Manager update v${release.versionName}…"
             val manager = SelfUpdateManager(activity, fenfaClient)
             val result = manager.startSelfUpdate(release) { progress ->
                 _selfUpdateProgress.value = progress
@@ -116,7 +116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _isSelfUpdating.value = false
             _selfUpdateRelease.value = null
             result.onFailure { error ->
-                _statusMessage.value = "Manager-Update fehlgeschlagen: ${error.localizedMessage}"
+                _statusMessage.value = "Manager update failed: ${error.localizedMessage}"
             }
         }
     }
@@ -124,7 +124,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun scanForWatch() {
         if (_isScanningWatch.value) return
         _isScanningWatch.value = true
-        _statusMessage.value = "Suche Galaxy Watch im WLAN (mDNS)…"
+        _statusMessage.value = "Searching for Galaxy Watch on Wi-Fi (mDNS)…"
 
         scanJob?.cancel()
         scanJob = viewModelScope.launch {
@@ -139,13 +139,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             connectPort = watch.port
                         )
                         repository.saveWatchConfig(watch.ip, watch.port)
-                        _statusMessage.value = "Watch gefunden auf ${watch.ip}:${watch.port}! Verbinde…"
+                        _statusMessage.value = "Watch found at ${watch.ip}:${watch.port}! Connecting…"
                         testWatchConnection()
                     }
                 }
                 delay(6000L)
                 if (!found) {
-                    _statusMessage.value = "Keine Watch im WLAN gefunden. Prüfe IP & Port manuell."
+                    _statusMessage.value = "No watch found on Wi-Fi. Check IP & port manually."
                 }
             } finally {
                 _isScanningWatch.value = false
@@ -156,22 +156,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun testWatchConnection() {
         viewModelScope.launch {
             val config = _watchConfig.value
-            _statusMessage.value = "Prüfe Verbindung zu ${config.ip}:${config.connectPort}…"
+            _statusMessage.value = "Testing connection to ${config.ip}:${config.connectPort}…"
             val result = watchAdbService.testConnection(config.ip, config.connectPort)
             result.onSuccess { model ->
                 _watchConfig.value = config.copy(deviceModel = model, isConnected = true)
-                _statusMessage.value = "Erfolgreich verbunden mit: $model"
+                _statusMessage.value = "Successfully connected to: $model"
                 refreshInstalledVersionsOnWatch()
             }.onFailure { error ->
                 _watchConfig.value = config.copy(deviceModel = null, isConnected = false)
-                _statusMessage.value = "Verbindung zu ${config.ip}:${config.connectPort} fehlgeschlagen. Bitte Connect-Port auf der Uhr prüfen!"
+                _statusMessage.value = "Connection to ${config.ip}:${config.connectPort} failed. Please verify Connect Port on your watch!"
             }
         }
     }
 
     fun pairWatch(ip: String, pairingPort: Int, pairingCode: String, connectPort: Int?) {
         viewModelScope.launch {
-            _statusMessage.value = "Kopple mit $ip:$pairingPort…"
+            _statusMessage.value = "Pairing with $ip:$pairingPort…"
             val result = watchAdbService.pair(ip, pairingPort, pairingCode)
             result.onSuccess {
                 val currentConfig = _watchConfig.value
@@ -179,13 +179,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 repository.saveWatchConfig(ip, portToUse)
                 _watchConfig.value = currentConfig.copy(ip = ip, connectPort = portToUse)
                 if (connectPort != null && connectPort > 0) {
-                    _statusMessage.value = "Erfolgreich gekoppelt! Verbinde zu Port $connectPort…"
+                    _statusMessage.value = "Pairing successful! Connecting to port $connectPort…"
                     testWatchConnection()
                 } else {
-                    _statusMessage.value = "Kopplung erfolgreich! IP $ip gespeichert. Gehe auf der Watch einen Schritt zurück und trage den Connect-Port ein."
+                    _statusMessage.value = "Pairing successful! IP $ip saved. Go one step back on your watch and enter the Connect Port."
                 }
             }.onFailure { error ->
-                _statusMessage.value = "Kopplung fehlgeschlagen: ${error.localizedMessage}"
+                _statusMessage.value = "Pairing failed: ${error.localizedMessage}"
             }
         }
     }
@@ -295,7 +295,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updatedApp = app.copy(
                 installedVersionCode = updatedInstalledCode,
                 installedVersionName = updatedInstalledName,
-                status = AppInstallStatus.Error("Fenfa-Fehler: ${error.localizedMessage}")
+                status = AppInstallStatus.Error("Fenfa error: ${error.localizedMessage}")
             )
             updateAppInList(updatedApp)
         }
@@ -307,7 +307,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val baseUrl = app.downloadBaseUrl
             val versionCode = app.latestVersionCode
             if (releaseId.isNullOrBlank() || baseUrl.isNullOrBlank() || versionCode == null) {
-                updateAppInList(app.copy(status = AppInstallStatus.Error("Kein Release zum Installieren")))
+                updateAppInList(app.copy(status = AppInstallStatus.Error("No release available to install")))
                 return@launch
             }
 
@@ -333,17 +333,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val updatedApp = app.copy(
                         installedVersionCode = versionCode,
                         installedVersionName = app.latestVersionName ?: versionCode.toString(),
-                        status = AppInstallStatus.Success("Erfolgreich auf Watch installiert!")
+                        status = AppInstallStatus.Success("Successfully installed on watch!")
                     )
                     updateAppInList(updatedApp)
                     saveCurrentApps()
-                    _statusMessage.value = "${app.name} v${app.latestVersionName} erfolgreich auf Watch installiert!"
+                    _statusMessage.value = "${app.name} v${app.latestVersionName} successfully installed on watch!"
                 }.onFailure { error ->
-                    updateAppInList(app.copy(status = AppInstallStatus.Error("Install-Fehler: ${error.localizedMessage}")))
-                    _statusMessage.value = "Installation von ${app.name} fehlgeschlagen"
+                    updateAppInList(app.copy(status = AppInstallStatus.Error("Install error: ${error.localizedMessage}")))
+                    _statusMessage.value = "Installation of ${app.name} failed"
                 }
             }.onFailure { error ->
-                updateAppInList(app.copy(status = AppInstallStatus.Error("Download-Fehler: ${error.localizedMessage}")))
+                updateAppInList(app.copy(status = AppInstallStatus.Error("Download error: ${error.localizedMessage}")))
             }
         }
     }

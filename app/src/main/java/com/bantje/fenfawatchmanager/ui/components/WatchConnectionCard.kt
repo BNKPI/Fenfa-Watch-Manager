@@ -70,7 +70,7 @@ fun WatchConnectionCard(
                     )
                     val isConfigured = config.ip.isNotBlank() && config.connectPort > 0
                     Text(
-                        text = if (isConfigured) "${config.ip}:${config.connectPort}" else "Nicht konfiguriert (Tippe auf 'IP/Port')",
+                        text = if (isConfigured) "${config.ip}:${config.connectPort}" else "Not configured (Tap 'IP/Port')",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -93,7 +93,7 @@ fun WatchConnectionCard(
                     onClick = onTestConnection,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Verbinden")
+                    Text("Connect")
                 }
 
                 FilledTonalButton(
@@ -106,14 +106,14 @@ fun WatchConnectionCard(
                     } else {
                         Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Suchen")
+                        Text("Scan")
                     }
                 }
 
                 FilledTonalButton(
                     onClick = onOpenPairing
                 ) {
-                    Text("Koppeln")
+                    Text("Pair")
                 }
 
                 OutlinedButton(

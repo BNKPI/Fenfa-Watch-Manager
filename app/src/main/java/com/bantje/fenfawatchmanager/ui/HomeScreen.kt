@@ -96,13 +96,13 @@ fun HomeScreen(
                     IconButton(onClick = { viewModel.checkAllApps() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Alle prüfen"
+                            contentDescription = "Check all"
                         )
                     }
                     IconButton(onClick = { showSettingsDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Einstellungen"
+                            contentDescription = "Settings"
                         )
                     }
                 }
@@ -113,7 +113,7 @@ fun HomeScreen(
                 onClick = { showAddDialog = true },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "App hinzufügen")
+                Icon(Icons.Default.Add, contentDescription = "Add app")
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -125,7 +125,7 @@ fun HomeScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Self-Update Banner falls verfügbar
+            // Self-Update Banner if available
             selfUpdateRelease?.let { release ->
                 item {
                     Card(
@@ -139,13 +139,13 @@ fun HomeScreen(
                                 Icon(Icons.Default.SystemUpdate, contentDescription = null, tint = OrangeWarning)
                                 Spacer(modifier = Modifier.padding(start = 8.dp))
                                 Text(
-                                    text = "Update für Watch Manager verfügbar!",
+                                    text = "Update available for Watch Manager!",
                                     style = MaterialTheme.typography.titleMedium
                                 )
                             }
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Version ${release.versionName} (Build ${release.versionCode}) steht auf Fenfa bereit.",
+                                text = "Version ${release.versionName} (Build ${release.versionCode}) is available on Fenfa.",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             if (!release.changelog.isNullOrBlank()) {
@@ -175,7 +175,7 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.End
                             ) {
                                 TextButton(onClick = { viewModel.dismissSelfUpdate() }) {
-                                    Text("Später")
+                                    Text("Later")
                                 }
                                 TextButton(
                                     onClick = {
@@ -183,7 +183,7 @@ fun HomeScreen(
                                     },
                                     enabled = !isSelfUpdating && activity != null
                                 ) {
-                                    Text("Jetzt aktualisieren")
+                                    Text("Update Now")
                                 }
                             }
                         }
@@ -209,7 +209,7 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Verwaltete Watch-Apps (${apps.size})",
+                        text = "Managed Watch Apps (${apps.size})",
                         style = MaterialTheme.typography.titleMedium
                     )
                 }
@@ -218,7 +218,7 @@ fun HomeScreen(
             if (apps.isEmpty()) {
                 item {
                     Text(
-                        text = "Keine Apps vorhanden. Tippe auf '+', um eine Watch-App hinzuzufügen.",
+                        text = "No apps configured yet. Tap '+' to add a Wear OS app.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

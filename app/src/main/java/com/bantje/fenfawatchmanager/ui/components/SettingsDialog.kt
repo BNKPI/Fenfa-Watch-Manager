@@ -33,24 +33,24 @@ fun SettingsDialog(
     onDismiss: () -> Unit,
     onSave: (ip: String, port: Int, localUrl: String, remoteUrl: String) -> Unit
 ) {
-    var ip by remember { mutableStateOf(if (initialIp == "192.168.178.50") "" else initialIp) }
-    var port by remember { mutableStateOf(if (initialPort <= 0 || initialPort == 41235) "" else initialPort.toString()) }
+    var ip by remember { mutableStateOf(initialIp) }
+    var port by remember { mutableStateOf(if (initialPort <= 0) "" else initialPort.toString()) }
     var localUrl by remember { mutableStateOf(initialLocalUrl) }
     var remoteUrl by remember { mutableStateOf(initialRemoteUrl) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Einstellungen") },
+        title = { Text("Settings") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Galaxy Watch Verbindung:", style = MaterialTheme.typography.titleSmall)
+                Text("Galaxy Watch Connection:", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(6.dp))
 
                 OutlinedTextField(
                     value = ip,
                     onValueChange = { ip = it },
-                    label = { Text("Watch IP-Adresse") },
-                    placeholder = { Text("z. B. 192.168.178.xxx") },
+                    label = { Text("Watch IP address") },
+                    placeholder = { Text("e.g. 192.168.1.xxx") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -61,8 +61,8 @@ fun SettingsDialog(
                 OutlinedTextField(
                     value = port,
                     onValueChange = { port = it },
-                    label = { Text("Connect-Port (Drahtloses Debuggen)") },
-                    placeholder = { Text("z. B. 39481") },
+                    label = { Text("Connect Port (Wireless debugging)") },
+                    placeholder = { Text("e.g. 39481") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -75,7 +75,7 @@ fun SettingsDialog(
                 OutlinedTextField(
                     value = localUrl,
                     onValueChange = { localUrl = it },
-                    label = { Text("LAN URL (Heim-WLAN)") },
+                    label = { Text("LAN URL (Home Wi-Fi)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -85,13 +85,13 @@ fun SettingsDialog(
                 OutlinedTextField(
                     value = remoteUrl,
                     onValueChange = { remoteUrl = it },
-                    label = { Text("Remote URL (Tailscale)") },
+                    label = { Text("Remote URL (Tailscale / Internet)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("App-Version:", style = MaterialTheme.typography.titleSmall)
+                Text("App Version:", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -109,7 +109,7 @@ fun SettingsDialog(
                         )
                     }
                     FilledTonalButton(onClick = onCheckSelfUpdate) {
-                        Text("Prüfen")
+                        Text("Check")
                     }
                 }
             }
@@ -117,16 +117,16 @@ fun SettingsDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val portNum = port.toIntOrNull() ?: 5555
+                    val portNum = port.toIntOrNull() ?: 0
                     onSave(ip.trim(), portNum, localUrl.trim(), remoteUrl.trim())
                 }
             ) {
-                Text("Speichern")
+                Text("Save")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text("Cancel")
             }
         }
     )

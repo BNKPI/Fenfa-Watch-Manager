@@ -26,18 +26,18 @@ fun PairingDialog(
     onDismiss: () -> Unit,
     onPair: (ip: String, pairingPort: Int, pairingCode: String, connectPort: Int?) -> Unit
 ) {
-    var ip by remember { mutableStateOf(if (initialIp == "192.168.178.50") "" else initialIp) }
+    var ip by remember { mutableStateOf(initialIp) }
     var pairingPort by remember { mutableStateOf("") }
     var pairingCode by remember { mutableStateOf("") }
-    var connectPort by remember { mutableStateOf(if (initialConnectPort > 0 && initialConnectPort != 41235) initialConnectPort.toString() else "") }
+    var connectPort by remember { mutableStateOf(if (initialConnectPort > 0) initialConnectPort.toString() else "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Mit Galaxy Watch koppeln") },
+        title = { Text("Pair with Galaxy Watch") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "1. Auf der Watch in: Entwickleroptionen → Drahtloses Debuggen → 'Neues Gerät koppeln'.",
+                    text = "1. On watch: Developer options → Wireless debugging → 'Pair new device'.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -46,7 +46,7 @@ fun PairingDialog(
                 OutlinedTextField(
                     value = ip,
                     onValueChange = { ip = it },
-                    label = { Text("Watch IP-Adresse") },
+                    label = { Text("Watch IP address") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -57,8 +57,8 @@ fun PairingDialog(
                 OutlinedTextField(
                     value = pairingPort,
                     onValueChange = { pairingPort = it },
-                    label = { Text("Pairing-Port (aus dem Koppeln-Fenster)") },
-                    placeholder = { Text("z. B. 38472") },
+                    label = { Text("Pairing port (from watch pairing dialog)") },
+                    placeholder = { Text("e.g. 38472") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -69,8 +69,8 @@ fun PairingDialog(
                 OutlinedTextField(
                     value = pairingCode,
                     onValueChange = { pairingCode = it },
-                    label = { Text("6-stelliger WLAN-Kopplungscode") },
-                    placeholder = { Text("z. B. 123456") },
+                    label = { Text("6-digit Wi-Fi pairing code") },
+                    placeholder = { Text("e.g. 123456") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -81,8 +81,8 @@ fun PairingDialog(
                 OutlinedTextField(
                     value = connectPort,
                     onValueChange = { connectPort = it },
-                    label = { Text("Connect-Port (von der Seite 'Drahtloses Debuggen')") },
-                    placeholder = { Text("z. B. 41235 (nach Zurückgehen sichtbar)") },
+                    label = { Text("Connect port (from Wireless debugging screen)") },
+                    placeholder = { Text("e.g. 41235 (visible after navigating back)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -100,12 +100,12 @@ fun PairingDialog(
                 },
                 enabled = ip.isNotBlank() && pairingPort.isNotBlank() && pairingCode.isNotBlank()
             ) {
-                Text("Koppeln & Verbinden")
+                Text("Pair & Connect")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text("Cancel")
             }
         }
     )

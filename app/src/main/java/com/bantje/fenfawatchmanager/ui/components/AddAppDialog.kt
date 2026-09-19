@@ -27,14 +27,14 @@ fun AddAppDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Neue Watch-App hinzufügen") },
+        title = { Text("Add Watch App") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("App-Name") },
-                    placeholder = { Text("z. B. OpenGym Wear") },
+                    label = { Text("App Name") },
+                    placeholder = { Text("e.g. OpenGym Wear") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -44,8 +44,8 @@ fun AddAppDialog(
                 OutlinedTextField(
                     value = slug,
                     onValueChange = { slug = it },
-                    label = { Text("Fenfa Product-Slug") },
-                    placeholder = { Text("z. B. opengymwear") },
+                    label = { Text("Fenfa Product Slug") },
+                    placeholder = { Text("e.g. opengymwear") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -56,7 +56,7 @@ fun AddAppDialog(
                     value = packageName,
                     onValueChange = { packageName = it },
                     label = { Text("Watch Package Name") },
-                    placeholder = { Text("z. B. com.example.opengymwear") },
+                    placeholder = { Text("e.g. com.example.opengymwear") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -71,12 +71,12 @@ fun AddAppDialog(
                 },
                 enabled = name.isNotBlank() && slug.isNotBlank() && packageName.isNotBlank()
             ) {
-                Text("Hinzufügen")
+                Text("Add")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text("Cancel")
             }
         }
     )

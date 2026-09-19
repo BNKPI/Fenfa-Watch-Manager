@@ -66,7 +66,7 @@ fun AppCard(
                 IconButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "App entfernen",
+                        contentDescription = "Remove app",
                         tint = MaterialTheme.colorScheme.outline
                     )
                 }
@@ -74,25 +74,25 @@ fun AppCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Versions-Info
+            // Version info
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("Watch (installiert):", style = MaterialTheme.typography.labelSmall)
+                    Text("Watch (installed):", style = MaterialTheme.typography.labelSmall)
                     Text(
                         text = if (app.installedVersionCode != null) {
                             "${app.installedVersionName ?: "v?"} (Build ${app.installedVersionCode})"
                         } else {
-                            "Nicht gefunden / Unbekannt"
+                            "Not found / Unknown"
                         },
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Fenfa (neueste):", style = MaterialTheme.typography.labelSmall)
+                    Text("Fenfa (latest):", style = MaterialTheme.typography.labelSmall)
                     Text(
                         text = if (app.latestVersionCode != null) {
                             "${app.latestVersionName ?: "v?"} (Build ${app.latestVersionCode})"
@@ -108,25 +108,25 @@ fun AppCard(
             if (!app.changelog.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Notiz: ${app.changelog}",
+                    text = "Note: ${app.changelog}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Statusanzeige & Progress
+            // Status display & progress
             when (val status = app.status) {
                 is AppInstallStatus.Checking -> {
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Prüfe Fenfa & Watch…", style = MaterialTheme.typography.bodySmall)
+                        Text("Checking Fenfa & Watch…", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 is AppInstallStatus.Downloading -> {
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text("Lade APK herunter…", style = MaterialTheme.typography.bodySmall)
+                    Text("Downloading APK…", style = MaterialTheme.typography.bodySmall)
                     Spacer(modifier = Modifier.height(4.dp))
                     if (status.progress != null) {
                         LinearProgressIndicator(
@@ -142,7 +142,7 @@ fun AppCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Installiere auf Galaxy Watch via ADB…", style = MaterialTheme.typography.bodySmall)
+                        Text("Installing on Galaxy Watch via ADB…", style = MaterialTheme.typography.bodySmall)
                     }
                 }
                 is AppInstallStatus.Success -> {
@@ -166,7 +166,7 @@ fun AppCard(
                 FilledTonalButton(onClick = onCheck) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Prüfen")
+                    Text("Check")
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -178,7 +178,7 @@ fun AppCard(
                     ) {
                         Icon(Icons.Default.SystemUpdate, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Auf Watch installieren")
+                        Text("Install on Watch")
                     }
                 } else if (app.latestReleaseId != null) {
                     Button(
@@ -187,7 +187,7 @@ fun AppCard(
                     ) {
                         Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Neu installieren")
+                        Text("Reinstall")
                     }
                 }
             }

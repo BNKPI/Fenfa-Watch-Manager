@@ -28,8 +28,8 @@ class AppPreferencesRepository(private val context: Context) {
     }
 
     val watchConfigFlow: Flow<WatchConfig> = context.dataStore.data.map { prefs ->
-        val savedIp = prefs[Keys.WATCH_IP]?.takeIf { it != "192.168.178.50" } ?: ""
-        val savedPort = prefs[Keys.WATCH_PORT]?.takeIf { it != 41235 } ?: 0
+        val savedIp = prefs[Keys.WATCH_IP] ?: ""
+        val savedPort = prefs[Keys.WATCH_PORT] ?: 0
         WatchConfig(
             ip = savedIp,
             connectPort = savedPort
