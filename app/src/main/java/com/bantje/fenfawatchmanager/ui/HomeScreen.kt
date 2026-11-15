@@ -254,10 +254,12 @@ fun HomeScreen(
     if (showPairingDialog) {
         PairingDialog(
             state = pairingUiState,
+            isScanning = isScanningWatch,
             onIpChange = { viewModel.updatePairingIp(it) },
             onPairingPortChange = { viewModel.updatePairingPort(it) },
             onPairingCodeChange = { viewModel.updatePairingCode(it) },
             onConnectPortChange = { viewModel.updateConnectPort(it) },
+            onScanWatch = { viewModel.scanForWatch() },
             onTestReachability = { viewModel.testIpReachability() },
             onPair = { viewModel.pairWatch() },
             onConnect = { viewModel.connectFromPairingDialog() },

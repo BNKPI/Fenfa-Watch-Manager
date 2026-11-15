@@ -277,7 +277,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val ip = _pairingUiState.value.ip.trim()
         if (ip.isBlank()) {
             _pairingUiState.value = _pairingUiState.value.copy(
-                errorMessage = "Please enter an IP address first."
+                errorMessage = "Bitte gib zuerst die IP-Adresse der Uhr ein."
             )
             return
         }
@@ -287,40 +287,75 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 errorMessage = null,
                 successMessage = null
             )
-            val reachable = withContext(Dispatchers.IO) {
+
+            val portsToTest = linkedSetOf<Int>()
+            _pairingUiState.value.pairingPort.toIntOrNull()?.let { if (it in 1..65535) portsToTest.add(it) }
+            _pairingUiState.value.connectPort.toIntOrNull()?.let { if (it in 1..65535) portsToTest.add(it) }
+            val savedPort = _watchConfig.value.connectPort
+            if (savedPort in 1..65535) portsToTest.add(savedPort)
+
+            val (isReachable, message) = withContext(Dispatchers.IO) {
                 try {
                     val address = java.net.InetAddress.getByName(ip)
-                    if (address.isReachable(1500)) {
-                        true
-                    } else {
-                        val portToProbe = _pairingUiState.value.pairingPort.toIntOrNull() ?: 5555
+
+                    // 1. Test specified/known ports
+                    for (port in portsToTest) {
                         try {
                             java.net.Socket().use { socket ->
-                                socket.connect(java.net.InetSocketAddress(address, portToProbe), 1500)
-                                true
+                                socket.connect(java.net.InetSocketAddress(address, port), 1200)
+                                return@withContext Pair(true, "Port $port ist offen und erreichbar!")
                             }
                         } catch (e: java.net.ConnectException) {
-                            true
-                        } catch (e: Exception) {
-                            false
-                        }
+                            // Connection refused = Host is definitely alive on the network and replied with TCP RST!
+                            return@withContext Pair(true, "Uhr ($ip) ist im WLAN online! (Antwort auf Port $port)")
+                        } catch (e: java.net.NoRouteToHostException) {
+                            return@withContext Pair(
+                                false,
+                                "Keine Route zum Host ($ip). Prüfe dein WLAN und stelle sicher, dass kein VPN/Tailscale aktiven LAN-Verkehr blockiert."
+                            )
+                        } catch (_: Exception) {}
                     }
+
+                    // 2. Fallback probe on port 5555
+                    try {
+                        java.net.Socket().use { socket ->
+                            socket.connect(java.net.InetSocketAddress(address, 5555), 800)
+                            return@withContext Pair(true, "Uhr ($ip) ist auf Port 5555 erreichbar!")
+                        }
+                    } catch (e: java.net.ConnectException) {
+                        return@withContext Pair(true, "Uhr ($ip) ist im WLAN erreichbar!")
+                    } catch (_: Exception) {}
+
+                    // 3. Fallback: OS ping command
+                    try {
+                        val process = Runtime.getRuntime().exec(arrayOf("/system/bin/ping", "-c", "1", "-W", "1", ip))
+                        if (process.waitFor() == 0) {
+                            return@withContext Pair(true, "Uhr ($ip) antwortet auf Ping!")
+                        }
+                    } catch (_: Exception) {}
+
+                    Pair(
+                        false,
+                        "Uhr ($ip) antwortet aktuell nicht.\n\n" +
+                        "WICHTIG bei Samsung Galaxy Watch / Wear OS:\n" +
+                        "1. Uhr-Display muss AN sein: Das WLAN der Uhr schläft sofort ein, wenn das Display ausgeht!\n" +
+                        "2. Bluetooth am Handy kurz AUS: Wenn Bluetooth an ist, kappt die Uhr das eigene WLAN und leitet Daten über Bluetooth.\n" +
+                        "3. Ports prüfen: Gib auch den Pairing-Port (aus dem 'Neues Gerät koppeln'-Popup) oder Connect-Port ein."
+                    )
                 } catch (e: Exception) {
-                    false
+                    Pair(false, "Fehler beim Prüfen von $ip: ${e.localizedMessage}")
                 }
             }
-            if (reachable) {
+
+            if (isReachable) {
                 _pairingUiState.value = _pairingUiState.value.copy(
                     isPinging = false,
-                    successMessage = "🟢 Watch IP ($ip) is reachable on your Wi-Fi!"
+                    successMessage = "🟢 $message"
                 )
             } else {
                 _pairingUiState.value = _pairingUiState.value.copy(
                     isPinging = false,
-                    errorMessage = "🔴 Host unreachable ($ip)!\n\n" +
-                        "1. VPN / Tailscale on phone: If active, disable VPN or enable 'Allow local network access' in Tailscale!\n" +
-                        "2. Watch screen asleep: Galaxy Watches disconnect Wi-Fi when screen dims or while Bluetooth is connected. Keep watch display awake!\n" +
-                        "3. Tip: Turn off Bluetooth on your phone temporarily to force the watch onto Wi-Fi."
+                    errorMessage = "🔴 $message"
                 )
             }
         }

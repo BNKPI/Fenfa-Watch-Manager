@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -51,10 +52,12 @@ import com.bantje.fenfawatchmanager.ui.theme.GreenSuccess
 @Composable
 fun PairingDialog(
     state: PairingUiState,
+    isScanning: Boolean = false,
     onIpChange: (String) -> Unit,
     onPairingPortChange: (String) -> Unit,
     onPairingCodeChange: (String) -> Unit,
     onConnectPortChange: (String) -> Unit,
+    onScanWatch: () -> Unit = {},
     onTestReachability: () -> Unit,
     onPair: () -> Unit,
     onConnect: () -> Unit,
@@ -148,6 +151,24 @@ fun PairingDialog(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                FilledTonalButton(
+                    onClick = onScanWatch,
+                    enabled = !isScanning && !state.isPairing && !state.isConnecting,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isScanning) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Searching via Wi-Fi mDNS…")
+                    } else {
+                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Auto-Detect Watch (mDNS)")
                     }
                 }
 
