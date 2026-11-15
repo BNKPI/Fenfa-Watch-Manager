@@ -69,6 +69,7 @@ fun HomeScreen(
     val selfUpdateRelease by viewModel.selfUpdateRelease.collectAsState()
     val selfUpdateProgress by viewModel.selfUpdateProgress.collectAsState()
     val isSelfUpdating by viewModel.isSelfUpdating.collectAsState()
+    val pairingUiState by viewModel.pairingUiState.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -252,11 +253,16 @@ fun HomeScreen(
 
     if (showPairingDialog) {
         PairingDialog(
-            initialIp = watchConfig.ip,
-            initialConnectPort = watchConfig.connectPort,
-            onDismiss = { showPairingDialog = false },
-            onPair = { ip, pPort, code, cPort ->
-                viewModel.pairWatch(ip, pPort, code, cPort)
+            state = pairingUiState,
+            onIpChange = { viewModel.updatePairingIp(it) },
+            onPairingPortChange = { viewModel.updatePairingPort(it) },
+            onPairingCodeChange = { viewModel.updatePairingCode(it) },
+            onConnectPortChange = { viewModel.updateConnectPort(it) },
+            onPair = { viewModel.pairWatch() },
+            onConnect = { viewModel.connectFromPairingDialog() },
+            onResetKeys = { viewModel.resetAdbKeys() },
+            onDismiss = {
+                viewModel.resetPairingStatus()
                 showPairingDialog = false
             }
         )

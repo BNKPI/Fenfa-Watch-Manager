@@ -48,12 +48,22 @@ fun SettingsDialog(
 
                 OutlinedTextField(
                     value = ip,
-                    onValueChange = { ip = it },
+                    onValueChange = { input ->
+                        if (input.contains(":")) {
+                            val parts = input.split(":")
+                            ip = parts[0].trim()
+                            if (parts.size > 1 && parts[1].isNotBlank()) {
+                                port = parts[1].trim().filter { it.isDigit() }
+                            }
+                        } else {
+                            ip = input
+                        }
+                    },
                     label = { Text("Watch IP address") },
                     placeholder = { Text("e.g. 192.168.1.xxx") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

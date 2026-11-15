@@ -15,6 +15,7 @@ import com.bantje.fenfawatchmanager.fenfa.FenfaClient
 import com.bantje.fenfawatchmanager.update.SelfUpdateManager
 import com.bantje.fenfawatchmanager.watch.WatchAdbService
 import com.bantje.fenfawatchmanager.watch.WatchDiscoveryService
+import com.bantje.fenfawatchmanager.watch.formatAdbError
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
+
+data class PairingUiState(
+    val ip: String = "",
+    val pairingPort: String = "",
+    val pairingCode: String = "",
+    val connectPort: String = "",
+    val isPairing: Boolean = false,
+    val isConnecting: Boolean = false,
+    val isPairedSuccessfully: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
+)
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -37,6 +50,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _watchConfig = MutableStateFlow(WatchConfig())
     val watchConfig: StateFlow<WatchConfig> = _watchConfig.asStateFlow()
+
+    private val _pairingUiState = MutableStateFlow(PairingUiState())
+    val pairingUiState: StateFlow<PairingUiState> = _pairingUiState.asStateFlow()
 
     private val _apps = MutableStateFlow<List<ManagedApp>>(emptyList())
     val apps: StateFlow<List<ManagedApp>> = _apps.asStateFlow()
@@ -69,6 +85,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.watchConfigFlow.collect { config ->
                 _watchConfig.value = config
+                if (_pairingUiState.value.ip.isBlank() && config.ip.isNotBlank()) {
+                    _pairingUiState.value = _pairingUiState.value.copy(
+                        ip = config.ip,
+                        connectPort = if (config.connectPort > 0) config.connectPort.toString() else _pairingUiState.value.connectPort
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -146,6 +168,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             ip = watch.ip,
                             connectPort = watch.port
                         )
+                        _pairingUiState.value = _pairingUiState.value.copy(
+                            ip = watch.ip,
+                            connectPort = watch.port.toString()
+                        )
                         repository.saveWatchConfig(watch.ip, watch.port)
                         _statusMessage.value = "Watch found at ${watch.ip}:${watch.port}! Connecting…"
                         testWatchConnection()
@@ -164,6 +190,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun testWatchConnection() {
         viewModelScope.launch {
             val config = _watchConfig.value
+            if (config.ip.isBlank() || config.connectPort <= 0) {
+                _statusMessage.value = "Watch IP or Connect Port not configured. Tap 'IP/Port' or 'Pair'."
+                return@launch
+            }
             _statusMessage.value = "Testing connection to ${config.ip}:${config.connectPort}…"
             val result = watchAdbService.testConnection(config.ip, config.connectPort)
             result.onSuccess { model ->
@@ -172,28 +202,186 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 refreshInstalledVersionsOnWatch()
             }.onFailure { error ->
                 _watchConfig.value = config.copy(deviceModel = null, isConnected = false)
-                _statusMessage.value = "Connection to ${config.ip}:${config.connectPort} failed. Please verify Connect Port on your watch!"
+                _statusMessage.value = formatAdbError(error, config.ip, config.connectPort, isPairing = false)
             }
         }
     }
 
-    fun pairWatch(ip: String, pairingPort: Int, pairingCode: String, connectPort: Int?) {
+    fun updatePairingIp(value: String) {
+        if (value.contains(":")) {
+            val parts = value.split(":")
+            val extractedIp = parts[0].trim()
+            val extractedPort = if (parts.size > 1) parts[1].trim().filter { it.isDigit() } else ""
+            _pairingUiState.value = _pairingUiState.value.copy(
+                ip = extractedIp,
+                pairingPort = if (extractedPort.isNotBlank()) extractedPort else _pairingUiState.value.pairingPort,
+                errorMessage = null
+            )
+        } else {
+            _pairingUiState.value = _pairingUiState.value.copy(ip = value, errorMessage = null)
+        }
+    }
+
+    fun updatePairingPort(value: String) {
+        _pairingUiState.value = _pairingUiState.value.copy(
+            pairingPort = value.filter { it.isDigit() },
+            errorMessage = null
+        )
+    }
+
+    fun updatePairingCode(value: String) {
+        _pairingUiState.value = _pairingUiState.value.copy(
+            pairingCode = value,
+            errorMessage = null
+        )
+    }
+
+    fun updateConnectPort(value: String) {
+        _pairingUiState.value = _pairingUiState.value.copy(
+            connectPort = value.filter { it.isDigit() },
+            errorMessage = null
+        )
+    }
+
+    fun resetPairingStatus() {
+        _pairingUiState.value = _pairingUiState.value.copy(
+            errorMessage = null,
+            successMessage = null,
+            isPairing = false,
+            isConnecting = false
+        )
+    }
+
+    fun resetAdbKeys() {
         viewModelScope.launch {
-            _statusMessage.value = "Pairing with $ip:$pairingPort…"
-            val result = watchAdbService.pair(ip, pairingPort, pairingCode)
+            val result = watchAdbService.resetKeys()
+            result.onSuccess {
+                _pairingUiState.value = _pairingUiState.value.copy(
+                    isPairedSuccessfully = false,
+                    errorMessage = null,
+                    successMessage = "ADB keys reset and regenerated. Please pair with your watch again."
+                )
+                _statusMessage.value = "ADB keys reset successfully."
+            }.onFailure { e ->
+                _pairingUiState.value = _pairingUiState.value.copy(
+                    errorMessage = "Failed to reset ADB keys: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+    fun pairWatch() {
+        viewModelScope.launch {
+            val state = _pairingUiState.value
+            val cleanIp = state.ip.trim()
+            val pPort = state.pairingPort.toIntOrNull() ?: 0
+            val cleanCode = state.pairingCode.filter { it.isDigit() }
+            val cPort = state.connectPort.toIntOrNull()
+
+            if (cleanIp.isBlank()) {
+                _pairingUiState.value = state.copy(errorMessage = "Please enter the watch IP address.")
+                return@launch
+            }
+            if (pPort <= 0) {
+                _pairingUiState.value = state.copy(errorMessage = "Please enter a valid pairing port (e.g. 38472).")
+                return@launch
+            }
+            if (cleanCode.length != 6) {
+                _pairingUiState.value = state.copy(errorMessage = "Pairing code must be exactly 6 digits (received ${cleanCode.length} digits).")
+                return@launch
+            }
+
+            _pairingUiState.value = state.copy(
+                isPairing = true,
+                errorMessage = null,
+                successMessage = null
+            )
+            _statusMessage.value = "Pairing with $cleanIp:$pPort…"
+
+            val result = watchAdbService.pair(cleanIp, pPort, cleanCode)
             result.onSuccess {
                 val currentConfig = _watchConfig.value
-                val portToUse = if (connectPort != null && connectPort > 0) connectPort else currentConfig.connectPort
-                repository.saveWatchConfig(ip, portToUse)
-                _watchConfig.value = currentConfig.copy(ip = ip, connectPort = portToUse)
-                if (connectPort != null && connectPort > 0) {
-                    _statusMessage.value = "Pairing successful! Connecting to port $connectPort…"
-                    testWatchConnection()
+                val portToSave = if (cPort != null && cPort > 0) cPort else currentConfig.connectPort
+                repository.saveWatchConfig(cleanIp, portToSave)
+                _watchConfig.value = currentConfig.copy(ip = cleanIp, connectPort = portToSave)
+
+                if (cPort != null && cPort > 0) {
+                    _pairingUiState.value = _pairingUiState.value.copy(
+                        isPairing = false,
+                        isConnecting = true,
+                        isPairedSuccessfully = true,
+                        successMessage = "Pairing successful! Connecting to port $cPort…"
+                    )
+                    _statusMessage.value = "Pairing successful! Connecting to port $cPort…"
+
+                    val connResult = watchAdbService.testConnection(cleanIp, cPort)
+                    connResult.onSuccess { model ->
+                        _watchConfig.value = _watchConfig.value.copy(deviceModel = model, isConnected = true)
+                        _pairingUiState.value = _pairingUiState.value.copy(
+                            isConnecting = false,
+                            successMessage = "Successfully paired & connected to: $model!"
+                        )
+                        _statusMessage.value = "Successfully connected to: $model"
+                        refreshInstalledVersionsOnWatch()
+                    }.onFailure { connErr ->
+                        val err = formatAdbError(connErr, cleanIp, cPort, isPairing = false)
+                        _pairingUiState.value = _pairingUiState.value.copy(
+                            isConnecting = false,
+                            errorMessage = "Pairing succeeded! But connection to port $cPort failed:\n$err\n\nTip: The Connect Port is usually DIFFERENT from the Pairing Port. On your watch, navigate one step back to the 'Wireless debugging' screen and verify the port."
+                        )
+                        _statusMessage.value = "Pairing succeeded, but connection failed."
+                    }
                 } else {
-                    _statusMessage.value = "Pairing successful! IP $ip saved. Go one step back on your watch and enter the Connect Port."
+                    _pairingUiState.value = _pairingUiState.value.copy(
+                        isPairing = false,
+                        isPairedSuccessfully = true,
+                        successMessage = "✅ Pairing successful! Phone is now authorized on the watch.\n\nNow go back one step on your watch to the 'Wireless debugging' screen. Enter the Connect Port shown there and tap 'Connect'."
+                    )
+                    _statusMessage.value = "Pairing successful! Please enter Connect Port."
                 }
             }.onFailure { error ->
-                _statusMessage.value = "Pairing failed: ${error.localizedMessage}"
+                val errorMsg = formatAdbError(error, cleanIp, pPort, isPairing = true)
+                _pairingUiState.value = _pairingUiState.value.copy(
+                    isPairing = false,
+                    errorMessage = errorMsg
+                )
+                _statusMessage.value = "Pairing failed: $errorMsg"
+            }
+        }
+    }
+
+    fun connectFromPairingDialog() {
+        viewModelScope.launch {
+            val state = _pairingUiState.value
+            val cleanIp = state.ip.trim()
+            val cPort = state.connectPort.toIntOrNull() ?: 0
+
+            if (cleanIp.isBlank() || cPort <= 0) {
+                _pairingUiState.value = state.copy(errorMessage = "Please enter a valid IP address and Connect Port.")
+                return@launch
+            }
+
+            _pairingUiState.value = state.copy(isConnecting = true, errorMessage = null)
+            _statusMessage.value = "Connecting to $cleanIp:$cPort…"
+
+            val result = watchAdbService.testConnection(cleanIp, cPort)
+            result.onSuccess { model ->
+                repository.saveWatchConfig(cleanIp, cPort)
+                _watchConfig.value = _watchConfig.value.copy(ip = cleanIp, connectPort = cPort, deviceModel = model, isConnected = true)
+                _pairingUiState.value = _pairingUiState.value.copy(
+                    isConnecting = false,
+                    successMessage = "Successfully connected to: $model!"
+                )
+                _statusMessage.value = "Successfully connected to: $model"
+                refreshInstalledVersionsOnWatch()
+            }.onFailure { error ->
+                _watchConfig.value = _watchConfig.value.copy(deviceModel = null, isConnected = false)
+                val errorMsg = formatAdbError(error, cleanIp, cPort, isPairing = false)
+                _pairingUiState.value = _pairingUiState.value.copy(
+                    isConnecting = false,
+                    errorMessage = errorMsg
+                )
+                _statusMessage.value = errorMsg
             }
         }
     }
