@@ -258,6 +258,7 @@ fun HomeScreen(
             onPairingPortChange = { viewModel.updatePairingPort(it) },
             onPairingCodeChange = { viewModel.updatePairingCode(it) },
             onConnectPortChange = { viewModel.updateConnectPort(it) },
+            onTestReachability = { viewModel.testIpReachability() },
             onPair = { viewModel.pairWatch() },
             onConnect = { viewModel.connectFromPairingDialog() },
             onResetKeys = { viewModel.resetAdbKeys() },

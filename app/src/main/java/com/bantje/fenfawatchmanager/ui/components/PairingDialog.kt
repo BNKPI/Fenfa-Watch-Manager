@@ -1,5 +1,10 @@
 package com.bantje.fenfawatchmanager.ui.components
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.net.wifi.WifiManager
+import android.view.WindowManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,16 +29,19 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -47,11 +55,39 @@ fun PairingDialog(
     onPairingPortChange: (String) -> Unit,
     onPairingCodeChange: (String) -> Unit,
     onConnectPortChange: (String) -> Unit,
+    onTestReachability: () -> Unit,
     onPair: () -> Unit,
     onConnect: () -> Unit,
     onResetKeys: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = remember(context) { context.findActivity() }
+
+    DisposableEffect(activity) {
+        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+        @Suppress("DEPRECATION")
+        val wifiLock = wifiManager?.createWifiLock(
+            WifiManager.WIFI_MODE_FULL_HIGH_PERF,
+            "FenfaWatchManager:PairingLock"
+        )?.apply {
+            setReferenceCounted(false)
+            try {
+                acquire()
+            } catch (_: Exception) {}
+        }
+
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            try {
+                if (wifiLock?.isHeld == true) {
+                    wifiLock.release()
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
     var showResetConfirm by remember { mutableStateOf(false) }
 
     AlertDialog(
@@ -95,10 +131,22 @@ fun PairingDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "2. Keep the pairing dialog open on the watch while clicking 'Pair & Connect' below!",
+                            text = "2. Keep the pairing dialog OPEN and display AWAKE on the watch while clicking 'Pair & Connect' below!",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "📱 Phone screen stays awake automatically while this dialog is open.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "⚠️ 'Host unreachable'? Wear OS often cuts Wi-Fi when the screen dims or when connected via Bluetooth. Keep watch screen on, or temporarily turn off Bluetooth on phone to force watch onto Wi-Fi.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -163,17 +211,34 @@ fun PairingDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Watch IP Field
-                OutlinedTextField(
-                    value = state.ip,
-                    onValueChange = onIpChange,
-                    label = { Text("Watch IP address") },
-                    placeholder = { Text("e.g. 192.168.1.150") },
+                // Watch IP Field + Test Button
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    enabled = !state.isPairing && !state.isConnecting,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-                )
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = state.ip,
+                        onValueChange = onIpChange,
+                        label = { Text("Watch IP address") },
+                        placeholder = { Text("e.g. 192.168.1.150") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        enabled = !state.isPairing && !state.isConnecting && !state.isPinging,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = onTestReachability,
+                        enabled = state.ip.isNotBlank() && !state.isPairing && !state.isConnecting && !state.isPinging,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        if (state.isPinging) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Test IP")
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -304,3 +369,10 @@ fun PairingDialog(
         )
     }
 }
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+

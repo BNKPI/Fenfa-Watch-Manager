@@ -148,6 +148,13 @@ fun formatAdbError(error: Throwable, ip: String, port: Int, isPairing: Boolean):
     val msg = error.message.orEmpty()
     val errorClass = error::class.simpleName ?: "Error"
     return when {
+        error is java.net.NoRouteToHostException || msg.contains("No route to host", ignoreCase = true) || msg.contains("unreachable", ignoreCase = true) || msg.contains("EHOSTUNREACH", ignoreCase = true) -> {
+            "Host unreachable ($ip:$port).\n\n" +
+            "Troubleshooting:\n" +
+            "1. VPN / Tailscale on phone: If active, disable VPN or enable 'Allow local network access' in Tailscale settings!\n" +
+            "2. Watch Wi-Fi asleep: Galaxy Watches turn off Wi-Fi when screen dims or while Bluetooth is connected. Keep watch display awake!\n" +
+            "3. Temporary fix: Turn OFF Bluetooth on your phone so the watch is forced to stay on Wi-Fi."
+        }
         error is java.net.ConnectException || msg.contains("Connection refused", ignoreCase = true) -> {
             if (isPairing) {
                 "Connection refused ($ip:$port). Ensure 'Pair new device' is open on the watch right now and the screen stays on!"

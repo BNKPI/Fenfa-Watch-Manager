@@ -17,11 +17,13 @@ import com.bantje.fenfawatchmanager.watch.WatchAdbService
 import com.bantje.fenfawatchmanager.watch.WatchDiscoveryService
 import com.bantje.fenfawatchmanager.watch.formatAdbError
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 
@@ -32,6 +34,7 @@ data class PairingUiState(
     val connectPort: String = "",
     val isPairing: Boolean = false,
     val isConnecting: Boolean = false,
+    val isPinging: Boolean = false,
     val isPairedSuccessfully: Boolean = false,
     val errorMessage: String? = null,
     val successMessage: String? = null
@@ -265,6 +268,59 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }.onFailure { e ->
                 _pairingUiState.value = _pairingUiState.value.copy(
                     errorMessage = "Failed to reset ADB keys: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+    fun testIpReachability() {
+        val ip = _pairingUiState.value.ip.trim()
+        if (ip.isBlank()) {
+            _pairingUiState.value = _pairingUiState.value.copy(
+                errorMessage = "Please enter an IP address first."
+            )
+            return
+        }
+        viewModelScope.launch {
+            _pairingUiState.value = _pairingUiState.value.copy(
+                isPinging = true,
+                errorMessage = null,
+                successMessage = null
+            )
+            val reachable = withContext(Dispatchers.IO) {
+                try {
+                    val address = java.net.InetAddress.getByName(ip)
+                    if (address.isReachable(1500)) {
+                        true
+                    } else {
+                        val portToProbe = _pairingUiState.value.pairingPort.toIntOrNull() ?: 5555
+                        try {
+                            java.net.Socket().use { socket ->
+                                socket.connect(java.net.InetSocketAddress(address, portToProbe), 1500)
+                                true
+                            }
+                        } catch (e: java.net.ConnectException) {
+                            true
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+                } catch (e: Exception) {
+                    false
+                }
+            }
+            if (reachable) {
+                _pairingUiState.value = _pairingUiState.value.copy(
+                    isPinging = false,
+                    successMessage = "🟢 Watch IP ($ip) is reachable on your Wi-Fi!"
+                )
+            } else {
+                _pairingUiState.value = _pairingUiState.value.copy(
+                    isPinging = false,
+                    errorMessage = "🔴 Host unreachable ($ip)!\n\n" +
+                        "1. VPN / Tailscale on phone: If active, disable VPN or enable 'Allow local network access' in Tailscale!\n" +
+                        "2. Watch screen asleep: Galaxy Watches disconnect Wi-Fi when screen dims or while Bluetooth is connected. Keep watch display awake!\n" +
+                        "3. Tip: Turn off Bluetooth on your phone temporarily to force the watch onto Wi-Fi."
                 )
             }
         }
